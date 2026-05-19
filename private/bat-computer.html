@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Bat-Ordinateur</title>
+</head>
+<body>
+  <h1 id="welcome">Chargement...</h1>
+
+  <h2>Arsenal</h2>
+  <div id="arsenal"></div>
+
+  <h2>Rapport de mission</h2>
+  <textarea id="reportContent"></textarea><br/>
+  <button id="sendReport">Envoyer</button>
+  <p id="reportMsg"></p>
+
+  <script>
+    const username = prompt('Username :');
+    const password = prompt('Password :');
+    const authHeader = 'Basic ' + btoa(username + ':' + password);
+
+    const headers = {
+      'Authorization': authHeader,
+      'Content-Type': 'application/json',
+    };
+
+    fetch('/api/me', { headers })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('welcome').textContent = 'Bienvenue, Justicier ' + data.username;
+      });
+
+    fetch('/api/secrets', { headers })
+      .then(res => res.json())
+      .then(gadgets => {
+        const container = document.getElementById('arsenal');
+        gadgets.forEach(g => {
+          const div = document.createElement('div');
+          div.textContent = g.name + ' — ' + g.desc;
+          container.appendChild(div);
+        });
+      });
+
+    document.getElementById('sendReport').addEventListener('click', async () => {
+      const content = document.getElementById('reportContent').value;
+
+      const res = await fetch('/api/reports', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ content }),
+      });
+
+      const data = await res.json();
+      document.getElementById('reportMsg').textContent = data.message || data.error;
+    });
+  </script>
+</body>
+</html>
