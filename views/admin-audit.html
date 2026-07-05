@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — Journal d'audit</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0d0d0d;
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #333;
+      padding-bottom: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    header h1 { font-size: 1.4rem; color: #f0c040; }
+
+    .back-btn {
+      background: #333;
+      color: #f0c040;
+      border: 1px solid #555;
+      padding: 0.5rem 1.2rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      text-decoration: none;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    th {
+      background: #1a1a1a;
+      color: #f0c040;
+      text-align: left;
+      padding: 0.7rem 1rem;
+      border-bottom: 2px solid #333;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    td {
+      padding: 0.6rem 1rem;
+      border-bottom: 1px solid #222;
+    }
+
+    tr:hover td { background: #1a1a1a; }
+
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 3px;
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+
+    .LOGIN  { background: #1a4a1a; color: #4caf50; }
+    .LOGOUT { background: #1a1a4a; color: #64b5f6; }
+    .FRAUD  { background: #4a1a1a; color: #ef5350; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🦇 Journal d'audit — Administration</h1>
+    <a href="/bat-computer" class="back-btn">Retour</a>
+  </header>
+
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Utilisateur</th>
+        <th>Action</th>
+        <th>Adresse IP</th>
+        <th>User-Agent</th>
+        <th>Horodatage</th>
+      </tr>
+    </thead>
+    <tbody id="logs-body">
+      <tr><td colspan="6" style="color:#666;text-align:center;padding:2rem;">Chargement...</td></tr>
+    </tbody>
+  </table>
+
+  <script>
+    fetch('/bat-computer/admin/audit/data')
+      .then(res => {
+        if (!res.ok) { window.location.href = '/auth/login'; return; }
+        return res.json();
+      })
+      .then(logs => {
+        const tbody = document.getElementById('logs-body');
+        if (!logs || logs.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="color:#666;text-align:center;padding:2rem;">Aucun événement enregistré.</td></tr>';
+          return;
+        }
+        tbody.innerHTML = logs.map(log => `
+          <tr>
+            <td>${log.id}</td>
+            <td>${log.username}</td>
+            <td><span class="badge ${log.action}">${log.action}</span></td>
+            <td>${log.ip_address || '—'}</td>
+            <td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${log.user_agent || ''}">${log.user_agent || '—'}</td>
+            <td>${log.timestamp}</td>
+          </tr>
+        `).join('');
+      });
+  </script>
+</body>
+</html>

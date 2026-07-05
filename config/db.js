@@ -1,0 +1,30 @@
+const Database = require('better-sqlite3');
+
+const db = new Database('database.db');
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    id       INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    role     TEXT NOT NULL DEFAULT 'user'
+  );
+
+  CREATE TABLE IF NOT EXISTS reports (
+    id      INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    content TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS connexions_audit (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    username   TEXT NOT NULL,
+    action     TEXT NOT NULL,
+    ip_address TEXT,
+    user_agent TEXT,
+    timestamp  DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+
+module.exports = db;
