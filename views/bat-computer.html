@@ -113,41 +113,10 @@
   <button id="sendReport">Envoyer le rapport</button>
   <p id="reportMsg"></p>
 
-  <script>
-    fetch('/bat-computer/api/me')
-      .then(res => {
-        if (!res.ok) { window.location.href = '/auth/login'; return; }
-        return res.json();
-      })
-      .then(data => {
-        if (data) {
-          document.getElementById('welcome').textContent =
-            'Bienvenue, Justicier ' + data.username + ' — la Batcave vous attend.';
-        }
-      });
+  <h2>Commandes critiques de la Batmobile</h2>
+  <button id="batmobileBtn">Accéder aux commandes (2FA requise)</button>
+  <p id="batmobileMsg"></p>
 
-    fetch('/bat-computer/api/secrets')
-      .then(res => res.json())
-      .then(gadgets => {
-        const container = document.getElementById('arsenal');
-        gadgets.forEach(g => {
-          const div = document.createElement('div');
-          div.className = 'gadget';
-          div.innerHTML = `<strong>${g.name}</strong>${g.desc}`;
-          container.appendChild(div);
-        });
-      });
-
-    document.getElementById('sendReport').addEventListener('click', async () => {
-      const content = document.getElementById('reportContent').value;
-      const res = await fetch('/bat-computer/api/reports', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content }),
-      });
-      const data = await res.json();
-      document.getElementById('reportMsg').textContent = data.message || data.error;
-    });
-  </script>
+  <script src="/dashboard.js"></script>
 </body>
 </html>

@@ -1,7 +1,10 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const path = require('path');
 const db = require('../config/db');
+const { signAccessToken } = require('../config/jwt');
+const { ACCESS_TOKEN_COOKIE_MS, REFRESH_TOKEN_COOKIE_MS, cookieOptions, issueRefreshToken } = require('../config/tokens');
 
 const router = express.Router();
 
@@ -32,13 +35,10 @@ router.post('/register', async (req, res) => {
 });
 
 router.get('/login', (req, res) => {
-  if (req.session && req.session.user) {
-    return res.redirect('/bat-computer');
-  }
   res.sendFile(path.join(__dirname, '../views/login.html'));
 });
 
-router.post('/login', async (req, res, next) => {
+router.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
@@ -56,43 +56,43 @@ router.post('/login', async (req, res, next) => {
     return res.status(401).sendFile(path.join(__dirname, '../views/login.html'));
   }
 
-  req.session.regenerate((err) => {
-    if (err) return next(err);
+  const accessToken = signAccessToken(user, false);
+  const refreshToken = issueRefreshToken(user.id);
 
-    req.session.user = { id: user.id, username: user.username, role: user.role };
-    req.session.ip = req.ip;
-    req.session.userAgent = req.headers['user-agent'];
+  res.cookie('token', accessToken, cookieOptions(ACCESS_TOKEN_COOKIE_MS));
+  res.cookie('refreshToken', refreshToken, cookieOptions(REFRESH_TOKEN_COOKIE_MS));
 
-    req.session.save((err) => {
-      if (err) return next(err);
+  db.prepare(
+    'INSERT INTO connexions_audit (username, action, ip_address, user_agent) VALUES (?, ?, ?, ?)'
+  ).run(user.username, 'LOGIN', req.ip, req.headers['user-agent']);
 
-      db.prepare(
-        'INSERT INTO connexions_audit (username, action, ip_address, user_agent) VALUES (?, ?, ?, ?)'
-      ).run(user.username, 'LOGIN', req.ip, req.headers['user-agent']);
-
-      res.redirect('/bat-computer');
-    });
-  });
+  res.redirect('/bat-computer');
 });
 
-router.get('/logout', (req, res, next) => {
-  const username = req.session?.user?.username;
-  const ip = req.ip;
-  const ua = req.headers['user-agent'];
+router.get('/logout', (req, res) => {
+  const refreshToken = req.cookies?.refreshToken;
+  const accessToken = req.cookies?.token;
 
-  req.session.destroy((err) => {
-    if (err) return next(err);
+  let username = accessToken ? jwt.decode(accessToken)?.username : undefined;
 
-    res.clearCookie('bat_identity');
-
-    if (username) {
-      db.prepare(
-        'INSERT INTO connexions_audit (username, action, ip_address, user_agent) VALUES (?, ?, ?, ?)'
-      ).run(username, 'LOGOUT', ip, ua);
+  if (refreshToken) {
+    if (!username) {
+      const row = db.prepare('SELECT user_id FROM refresh_tokens WHERE token = ?').get(refreshToken);
+      username = row && db.prepare('SELECT username FROM users WHERE id = ?').get(row.user_id)?.username;
     }
+    db.prepare('DELETE FROM refresh_tokens WHERE token = ?').run(refreshToken);
+  }
 
-    res.redirect('/auth/login');
-  });
+  res.clearCookie('token');
+  res.clearCookie('refreshToken');
+
+  if (username) {
+    db.prepare(
+      'INSERT INTO connexions_audit (username, action, ip_address, user_agent) VALUES (?, ?, ?, ?)'
+    ).run(username, 'LOGOUT', req.ip, req.headers['user-agent']);
+  }
+
+  res.redirect('/auth/login');
 });
 
 module.exports = router;
