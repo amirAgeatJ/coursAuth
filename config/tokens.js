@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const db = require('./db');
 
-const ACCESS_TOKEN_COOKIE_MS = 15 * 1000;
+const ACCESS_TOKEN_COOKIE_MS = 15 * 60 * 1000;
 const REFRESH_TOKEN_TTL_DAYS = 7;
 const REFRESH_TOKEN_COOKIE_MS = REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000;
 

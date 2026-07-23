@@ -37,4 +37,16 @@ db.exec(`
   );
 `);
 
+const userColumns = db.prepare('PRAGMA table_info(users)').all().map((col) => col.name);
+
+if (!userColumns.includes('role')) {
+  db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'");
+}
+if (!userColumns.includes('two_factor_secret')) {
+  db.exec('ALTER TABLE users ADD COLUMN two_factor_secret TEXT');
+}
+if (!userColumns.includes('two_factor_enabled')) {
+  db.exec('ALTER TABLE users ADD COLUMN two_factor_enabled INTEGER NOT NULL DEFAULT 0');
+}
+
 module.exports = db;

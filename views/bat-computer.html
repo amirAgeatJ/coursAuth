@@ -95,6 +95,22 @@
     button:hover { background: #ffd966; }
 
     #reportMsg { margin-top: 0.7rem; font-size: 0.9rem; color: #aaa; }
+
+    #qrCodeImg { display: none; margin: 1rem 0; border-radius: 6px; max-width: 200px; }
+
+    #totpCodeInput {
+      background: #111;
+      border: 1px solid #444;
+      border-radius: 4px;
+      color: #fff;
+      padding: 0.5rem 0.8rem;
+      font-size: 1rem;
+      margin-right: 0.5rem;
+    }
+
+    #confirm2FASection { display: none; margin-top: 1rem; }
+
+    #twoFAStatus, #batmobileMsg { margin-top: 0.7rem; font-size: 0.9rem; color: #aaa; }
   </style>
 </head>
 <body>
@@ -114,8 +130,18 @@
   <p id="reportMsg"></p>
 
   <h2>Commandes critiques de la Batmobile</h2>
-  <button id="batmobileBtn">Accéder aux commandes (2FA requise)</button>
+  <button id="batmobileBtn">Accéder aux commandes</button>
   <p id="batmobileMsg"></p>
+
+  <h2>Sécurité du compte</h2>
+  <button id="enroll2FABtn">Activer la double authentification (TOTP)</button>
+  <img id="qrCodeImg" alt="QR code TOTP" />
+  <p id="twoFASecretText"></p>
+  <div id="confirm2FASection">
+    <input type="text" id="totpCodeInput" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="Code à 6 chiffres" />
+    <button id="confirm2FABtn">Confirmer</button>
+  </div>
+  <p id="twoFAStatus"></p>
 
   <script src="/dashboard.js"></script>
 </body>

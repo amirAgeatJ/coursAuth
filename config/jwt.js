@@ -1,10 +1,11 @@
 const jwt = require('jsonwebtoken');
+const { scopesForRole } = require('./scopes');
 
-const ACCESS_TOKEN_TTL = '15s';
+const ACCESS_TOKEN_TTL = '15m';
 
-function signAccessToken(user, is2FAVerified = false) {
+function signAccessToken(user) {
   return jwt.sign(
-    { id: user.id, username: user.username, role: user.role, is2FAVerified },
+    { id: user.id, username: user.username, role: user.role, scopes: scopesForRole(user.role) },
     process.env.JWT_SECRET,
     { expiresIn: ACCESS_TOKEN_TTL }
   );

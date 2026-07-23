@@ -30,11 +30,4 @@ function isAdmin(req, res, next) {
   res.status(403).send('Accès refusé — réservé aux administrateurs.');
 }
 
-function require2FA(req, res, next) {
-  if (req.user && req.user.is2FAVerified) {
-    return next();
-  }
-  res.status(403).json({ error: 'Double authentification requise' });
-}
-
-module.exports = { checkJWT, isAdmin, require2FA };
+module.exports = { checkJWT, isAdmin };

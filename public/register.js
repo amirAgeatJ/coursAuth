@@ -11,7 +11,7 @@ document.getElementById('btn').addEventListener('click', async () => {
   const data = await res.json();
   document.getElementById('message').textContent = data.message || data.error;
 
-  if (res.ok) {
-    setTimeout(() => { window.location.href = '/auth/login'; }, 1000);
+  if (res.ok && data.mustEnroll2FA) {
+    setTimeout(() => { window.location.href = '/bat-computer'; }, 1000);
   }
 });

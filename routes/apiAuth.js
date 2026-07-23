@@ -1,14 +1,11 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
 const db = require('../config/db');
 const { signAccessToken } = require('../config/jwt');
 const { checkJWT } = require('../middlewares/authCheck');
 const { ACCESS_TOKEN_COOKIE_MS, REFRESH_TOKEN_COOKIE_MS, cookieOptions, issueRefreshToken, clearAuthCookies } = require('../config/tokens');
 
 const router = express.Router();
-
-const ALFRED_2FA_CODE = '770423';
 
 const ANSSI_PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}$/;
 
@@ -54,9 +51,7 @@ router.post('/refresh', (req, res) => {
 
   db.prepare('UPDATE refresh_tokens SET used = 1 WHERE id = ?').run(row.id);
   const newRefreshToken = issueRefreshToken(user.id);
-
-  const previousClaims = req.cookies?.token ? jwt.decode(req.cookies.token) : null;
-  const accessToken = signAccessToken(user, previousClaims?.is2FAVerified === true);
+  const accessToken = signAccessToken(user);
 
   res.cookie('token', accessToken, cookieOptions(ACCESS_TOKEN_COOKIE_MS));
   res.cookie('refreshToken', newRefreshToken, cookieOptions(REFRESH_TOKEN_COOKIE_MS));
@@ -91,20 +86,6 @@ router.post('/change-password', checkJWT, async (req, res) => {
   db.prepare('UPDATE users SET password = ? WHERE id = ?').run(newHash, user.id);
 
   res.json({ message: 'Mot de passe mis à jour' });
-});
-
-router.post('/verify-2fa', checkJWT, (req, res) => {
-  const { code } = req.body;
-
-  if (code !== ALFRED_2FA_CODE) {
-    return res.status(401).json({ error: 'Code de validation incorrect' });
-  }
-
-  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
-  const accessToken = signAccessToken(user, true);
-  res.cookie('token', accessToken, cookieOptions(ACCESS_TOKEN_COOKIE_MS));
-
-  res.json({ message: 'Double authentification validée' });
 });
 
 module.exports = router;

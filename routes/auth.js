@@ -24,8 +24,16 @@ router.post('/register', async (req, res) => {
 
   try {
     const hash = await bcrypt.hash(password, 10);
-    db.prepare('INSERT INTO users (username, password) VALUES (?, ?)').run(username, hash);
-    res.status(201).json({ message: 'Utilisateur créé' });
+    const { lastInsertRowid } = db.prepare('INSERT INTO users (username, password) VALUES (?, ?)').run(username, hash);
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(lastInsertRowid);
+
+    const accessToken = signAccessToken(user);
+    const refreshToken = issueRefreshToken(user.id);
+
+    res.cookie('token', accessToken, cookieOptions(ACCESS_TOKEN_COOKIE_MS));
+    res.cookie('refreshToken', refreshToken, cookieOptions(REFRESH_TOKEN_COOKIE_MS));
+
+    res.status(201).json({ message: 'Utilisateur créé', mustEnroll2FA: true });
   } catch (err) {
     if (err.message.includes('UNIQUE')) {
       return res.status(409).json({ error: 'Ce username est déjà pris' });
@@ -42,31 +50,31 @@ router.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
-    return res.status(400).sendFile(path.join(__dirname, '../views/login.html'));
+    return res.status(400).json({ error: 'Username et password requis' });
   }
 
   const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
-
   if (!user) {
-    return res.status(401).sendFile(path.join(__dirname, '../views/login.html'));
+    return res.status(401).json({ error: 'Identifiants invalides' });
   }
 
   const isValid = await bcrypt.compare(password, user.password);
   if (!isValid) {
-    return res.status(401).sendFile(path.join(__dirname, '../views/login.html'));
+    return res.status(401).json({ error: 'Identifiants invalides' });
   }
 
-  const accessToken = signAccessToken(user, false);
-  const refreshToken = issueRefreshToken(user.id);
+  if (!user.two_factor_enabled) {
+    return res.status(403).json({
+      error: "Double authentification (2FA) obligatoire. Activez-la avant de vous connecter.",
+      mustEnroll2FA: true,
+    });
+  }
 
-  res.cookie('token', accessToken, cookieOptions(ACCESS_TOKEN_COOKIE_MS));
-  res.cookie('refreshToken', refreshToken, cookieOptions(REFRESH_TOKEN_COOKIE_MS));
-
-  db.prepare(
-    'INSERT INTO connexions_audit (username, action, ip_address, user_agent) VALUES (?, ?, ?, ?)'
-  ).run(user.username, 'LOGIN', req.ip, req.headers['user-agent']);
-
-  res.redirect('/bat-computer');
+  res.json({
+    requires2FA: true,
+    message: 'Étape 1 validée. Veuillez fournir votre code TOTP.',
+    username: user.username,
+  });
 });
 
 router.get('/logout', (req, res) => {

@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const db = require('../config/db');
 const { checkJWT, isAdmin } = require('../middlewares/authCheck');
+const checkScope = require('../middlewares/checkScope');
 
 const router = express.Router();
 
@@ -13,7 +14,7 @@ router.get('/api/me', checkJWT, (req, res) => {
   res.json({ id: req.user.id, username: req.user.username });
 });
 
-router.get('/api/secrets', checkJWT, (req, res) => {
+router.get('/api/secrets', checkJWT, checkScope('armory:weapons'), (req, res) => {
   res.json([
     { name: 'Batarang', desc: 'Arme de jet',             icon: 'fa-shuriken'     },
     { name: 'Grappin',  desc: 'Ascension des bâtiments', icon: 'fa-anchor'       },

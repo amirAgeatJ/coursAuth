@@ -59,26 +59,54 @@ document.getElementById('sendReport').addEventListener('click', async () => {
 const batmobileBtn = document.getElementById('batmobileBtn');
 if (batmobileBtn) {
   batmobileBtn.addEventListener('click', async () => {
-    const code = prompt("Code secret transmis par Alfred :");
-    if (!code) return;
+    const res = await apiFetch('/api/user/secret-batmobile');
+    const data = await res.json();
+    document.getElementById('batmobileMsg').textContent = res.ok
+      ? `${data.message} Commandes : ${data.commands.join(', ')}`
+      : data.error;
+  });
+}
 
-    const verifyRes = await apiFetch('/api/auth/verify-2fa', {
+const enroll2FABtn = document.getElementById('enroll2FABtn');
+const qrCodeImg = document.getElementById('qrCodeImg');
+const twoFASecretText = document.getElementById('twoFASecretText');
+const confirm2FASection = document.getElementById('confirm2FASection');
+const twoFAStatus = document.getElementById('twoFAStatus');
+
+if (enroll2FABtn) {
+  enroll2FABtn.addEventListener('click', async () => {
+    const res = await apiFetch('/api/2fa/setup', { method: 'POST' });
+    const data = await res.json();
+
+    if (!res.ok) {
+      twoFAStatus.textContent = data.error;
+      return;
+    }
+
+    qrCodeImg.src = data.qrCode;
+    qrCodeImg.style.display = 'block';
+    twoFASecretText.textContent = `Secret (si le QR code ne scanne pas) : ${data.secret}`;
+    confirm2FASection.style.display = 'block';
+    twoFAStatus.textContent = 'Scannez le QR code avec Google Authenticator, puis saisissez le code généré.';
+  });
+}
+
+const confirm2FABtn = document.getElementById('confirm2FABtn');
+if (confirm2FABtn) {
+  confirm2FABtn.addEventListener('click', async () => {
+    const code = document.getElementById('totpCodeInput').value;
+    const res = await apiFetch('/api/2fa/confirm', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code }),
     });
-    const verifyData = await verifyRes.json();
+    const data = await res.json();
 
-    if (!verifyRes.ok) {
-      document.getElementById('batmobileMsg').textContent = verifyData.error;
-      return;
+    twoFAStatus.textContent = data.message || data.error;
+    if (res.ok) {
+      confirm2FASection.style.display = 'none';
+      qrCodeImg.style.display = 'none';
     }
-
-    const secretRes = await apiFetch('/api/user/secret-batmobile');
-    const secretData = await secretRes.json();
-    document.getElementById('batmobileMsg').textContent = secretRes.ok
-      ? `${secretData.message} Commandes : ${secretData.commands.join(', ')}`
-      : secretData.error;
   });
 }
 
