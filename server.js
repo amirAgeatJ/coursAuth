@@ -11,6 +11,7 @@ const apiUserRouter = require('./routes/apiUser');
 const batcomputerRouter = require('./routes/batcomputer');
 const twoFactorRouter = require('./routes/twoFactor');
 const mfaLoginRouter = require('./routes/mfaLogin');
+const oauthRouter = require('./routes/oauth');
 
 const app = express();
 
@@ -21,6 +22,7 @@ app.use(cookieParser());
 app.use(express.static('public'));
 
 app.use('/auth', authRouter);
+app.use('/auth', oauthRouter);
 app.use('/api/auth', apiAuthRouter);
 app.use('/api/user', apiUserRouter);
 app.use('/api/2fa', twoFactorRouter);
